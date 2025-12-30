@@ -5,17 +5,21 @@
 #include <Adafruit_SH110X.h>
 #include <Adafruit_AHTX0.h>
 
+//declared objects
 Adafruit_AHTX0 aht;
 Adafruit_SH1107 display = Adafruit_SH1107(64, 128, &Wire);
-int voltagePin = 35;
-int batteryPercent = 0;
-int bodyTemp = 0;
-int bodyHumid = 0;
 
+//declared pins used
 #define BUTTON_A 15
 #define BUTTON_B 32
 #define BUTTON_C 14
 
+//declared variables
+int BATTERY_PERCENT = 0;
+float BODY_TEMP = 0;
+float BODY_HUMID = 0;
+
+//setup all the stuff
 void setup() {
   // Some boards work best if we also make a serial connection
   Serial.begin(9600);
@@ -26,9 +30,7 @@ void setup() {
 
   Serial.println("OLED begun");
 
-  // Show image buffer on the display hardware.
-  // Since the buffer is intialized with an Adafruit splashscreen
-  // internally, this will display the splashscreen.
+  //display buffer at start
   display.display();
   delay(1000);
 
@@ -65,50 +67,48 @@ void setup() {
   analogReadResolution(12);
 }
 
+//clear the display when asked
+void clearDisplay(){
+  display.clearDisplay();
+  display.setCursor(0,0);
+}
+
+//simple display function
+void displayData(float BODY_TEMP, float BODY_HUMID, int BATTERY_PERCENT){
+  clearDisplay();
+  display.setTextSize(2);
+  display.print("TACK DEBUG\n");
+  display.setTextSize(1);
+  display.print("Temp is: ");
+  display.print(BODY_TEMP);
+  display.print(" deg F.\n");
+  display.print("Hum  is: ");
+  display.print(BODY_HUMID);
+  display.print(" %rH.\n");
+  display.print("Batt  %: ");
+  display.print(BATTERY_PERCENT);
+  display.print(" %.\n");
+}
+
 void loop() {
 
   //read the temp and humidity
   sensors_event_t humidity, temp;
   aht.getEvent(&humidity, &temp);// populate temp and humidity objects with fresh data
-  bodyTemp = (9/5)*temp.temperature+32;
-  bodyHumid = humidity.relative_humidity;
-  batteryPercent = (((analogRead(voltagePin)*2*3.3/4095)-3)/.7)*100;
-  if(batteryPercent > 100){
-    batteryPercent=100;
-  }
+  
+  //calculate menu variables
+  BODY_TEMP = temp.temperature;
+  BODY_TEMP = BODY_TEMP*9/5+32;
+  BODY_HUMID = humidity.relative_humidity;
+  BATTERY_PERCENT = (((analogRead(BATT_MONITOR)*2*3.3/4095)-3)/.7)*100;
+  if(BATTERY_PERCENT> 100) BATTERY_PERCENT=100;
 
-  if(!digitalRead(BUTTON_A)) {
-    display.setCursor(0,0);
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.print("TACK DEBUG\n");
-    display.setTextSize(1);
-    display.print("Temp is: ");
-    display.print(bodyTemp);
-    display.print(" deg F.\n");
-    display.print("Hum  is: ");
-    display.print(bodyHumid);
-    display.print(" %rH.\n");
-    display.print("Batt  %: ");
-    display.print(batteryPercent);
-    display.print(" %.\n");
-   }
+  displayData(BODY_TEMP,BODY_HUMID,BATTERY_PERCENT);
 
-  if(!digitalRead(BUTTON_B)) {
-    display.setCursor(0,0);
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.print("TACK DEBUG\n");
-    display.setTextSize(1);
-    display.print("Hum is: ");
-    display.print(humidity.relative_humidity);
-    display.print("%rH.\n");
-  }
-
-  if(!digitalRead(BUTTON_C)) {
-    display.clearDisplay();
-    display.setCursor(0,0);
-  };
+  //button commands, not sure what to do with this yet
+  if(!digitalRead(BUTTON_A)) Serial.println("A");
+  if(!digitalRead(BUTTON_B)) Serial.println("B");
+  if(!digitalRead(BUTTON_C)) clearDisplay();
   
  //debug flags
   //Serial.print("Temperature: "); Serial.print(temp.temperature); Serial.println(" degrees C");
